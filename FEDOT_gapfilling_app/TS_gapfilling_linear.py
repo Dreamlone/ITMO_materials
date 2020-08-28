@@ -101,6 +101,10 @@ def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
                 local_gaps = []
             else:
                 local_gaps.append(gap)
+
+    if len(new_gap_list) == 0:
+        new_gap_list.append(local_gaps)
+
     # Итеративно заполняем пропуски во временном ряду
     for gap in new_gap_list:
 
