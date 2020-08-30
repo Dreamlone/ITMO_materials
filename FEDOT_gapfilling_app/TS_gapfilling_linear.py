@@ -14,29 +14,30 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, median_abso
 from pylab import rcParams
 rcParams['figure.figsize'] = 18, 7
 
-# Проверка точности восстановления исходного ряда
+# Checking the accuracy of restoring the source timeseries
 ### Input:
-# parameter (str)        --- название столбца в датафрейме data, параметр, из которого сотавляется временной ряд
-# mask (str)             --- название столбца в датафрейме data, который содержит бинарный код маски пропусков
-# data (pd DataFrame)    --- датафрейм, в котором содержится вся необходимая информация
-# withoutgap_arr (array) --- массив без пропусков
+# parameter      --- the name of the column in the dataframe, the parameter from which the time series is composed
+# mask           --- the name of the column in the data frame, which contains the binary code of the gap mask
+# data           --- dataframe containing all the necessary information
+# withoutgap_arr --- array without gaps
 ### Output:
-# Функция выводит на экран значения трех метрик: MAE, RMSE, MedianAE
-def validate(parameter, mask, data, withoutgap_arr, bad_value = -100.0):
+# The function displays the values of three metrics: MAE, RMSE, MedianAE + plots
+def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array, bad_value: float=-100.0) -> None:
     arr_parameter = np.array(data[parameter])
     arr_mask = np.array(data[mask])
-    # В каких элементах присутствуют пропуски
+
+    # Which elements have gaps
     ids = np.ravel(np.argwhere(arr_mask == 0))
 
     true_values = arr_parameter[ids]
     predicted_values = withoutgap_arr[ids]
-    print('Совокупный размер пропусков:', len(true_values))
+    print('The total size of the gaps:', len(true_values))
     min_value = min(true_values)
     max_value = max(true_values)
-    print('Минимальное значение в пропуске - ', min_value)
-    print('Максимальное значение в пропуске- ', max_value)
+    print('Minimum value in the gap - ', min_value)
+    print('Maximum value in the gap - ', max_value)
 
-    # Выводим на экран метрики
+    # Displaying metrics
     MAE = mean_absolute_error(true_values, predicted_values)
     print('Mean absolute error -', round(MAE, 2))
 
@@ -46,10 +47,10 @@ def validate(parameter, mask, data, withoutgap_arr, bad_value = -100.0):
     MedianAE = median_absolute_error(true_values, predicted_values)
     print('Median absolute error -', round(MedianAE, 2), '\n')
 
-    # Совмещение предсказанных значений с пропуском
+    # Matching predicted values with gaps
     arr_parameter_modified = np.copy(arr_parameter)
-    arr_parameter[arr_mask == 1] = bad_value # Изначальные значения в пропусках
-    withoutgap_arr[arr_mask == 1] = bad_value # Заполненные значения в пропусках
+    arr_parameter[arr_mask == 1] = bad_value # Initial values in gaps
+    withoutgap_arr[arr_mask == 1] = bad_value # Filled (predicted) values in gaps
 
     arr_parameter_modified[arr_mask == 0] = bad_value
     masked_array_1 = np.ma.masked_where(arr_parameter_modified == bad_value, arr_parameter_modified)
@@ -73,20 +74,20 @@ def validate(parameter, mask, data, withoutgap_arr, bad_value = -100.0):
     plt.show()
 
 
-# Функция-обертка для заполнения пропусков во временных рядах с помощью фреймворка FEDOT
+# Wrapper function for filling gaps in time series using FEDOT framework
 ### Input:
-# data (np array)       --- одномерный массив (временной ряд), в котором требуется заполнить пропуски
-# max_window_size (int) --- размер скользящего окна
-# gap_value (float)     --- флаг пропуска в массиве
+# data            --- one-dimensional array (time series) in which we want to fill in the gaps
+# max_window_size --- sliding window size
+# gap_value       --- gap flag in array
 ### Output:
-# timeseries (np array) --- временной ряд без пропусков
-def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
+# timeseries --- time series without gaps
+def fill_gaps(data: np.array, max_window_size: int=100, gap_value: float=-100.0) -> np.array:
 
-    # Поиск значений пропусков
+    # Gap indices
     gap_list = np.ravel(np.argwhere(data == gap_value))
 
-    # Думаю, этот фрагмент стоит значительно переделать
-    # Нахождение пропусков по интервалам
+    # I think this fragment should be updated
+    # Finding gaps by intervals
     new_gap_list = []
     local_gaps = []
     for index, gap in enumerate(gap_list):
@@ -95,7 +96,7 @@ def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
         else:
             prev_gap = gap_list[index-1]
             if gap - prev_gap > 1:
-                # Имеется разрыв между пропусками
+                # There is a gap between gaps
                 local_gaps.append(gap)
                 new_gap_list.append(local_gaps)
                 local_gaps = []
@@ -105,13 +106,13 @@ def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
     if len(new_gap_list) == 0:
         new_gap_list.append(local_gaps)
 
-    # Итеративно заполняем пропуски во временном ряду
+    # Iterately fill in the gaps in the time series
     for gap in new_gap_list:
 
-        # Для обучения используется весь временной ряд для пропуска
+        # The entire time series is used for training until the gap
         timeseries_train_part = data[:gap[0]]
 
-        # Адаптивная длина интервала прогноза
+        # Adaptive prediction interval length
         len_gap = len(gap)
         forecast_length = len_gap
 
@@ -131,11 +132,11 @@ def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
                                task=task,
                                data_type=DataTypesEnum.ts)
 
-        # Строим предсказания для пропущенной части во временном ряду
+        # Making predictions for the missing part in the time series
         chain = TsForecastingChain(PrimaryNode('ridge'))
         chain.fit_from_scratch(input_data)
 
-        # "Тестовые данные" для того, чтобы делать предсказание на определенную длину
+        # "Test data" for making prediction for a specific length
         test_data_imit = np.ones(len_gap)
         x1 = np.arange(0, len(test_data_imit)) / 10
         x2 = np.arange(0, len(test_data_imit)) + 1
@@ -148,31 +149,31 @@ def fill_gaps(data, max_window_size = 100, gap_value = -100.0):
 
         predicted_values = chain.forecast(initial_data=input_data, supplementary_data=test_data).predict
 
-        # Заменяем пропуски в массиве предсказанными значениями
+        # Replace gaps in an array with predicted values
         data[gap] = predicted_values
 
     return(data)
 
 
-#                               ----- ПРИМЕНЕНИЕ АЛГОРИТМА -----                                     #
+#                               ----- APPLICATION OF THE ALGORITHM -----                                     #
 if __name__ == '__main__':
-    # Для каких значений будет производится запуск модели
-    mask_name = 'Small_mask'
+    # For what values will the model run
+    mask_name = 'Big_mask_100'
     parameter = 'Mean Tmp'
 
-    # Загружаем датасет с данными
+    # Loading a dataset with data
     data = pd.read_csv('D:/FEDOT_timeseries/Spb_meteodata.csv', sep = ';')
     data['Date'] = pd.to_datetime(data['Date'])
     print(data.head(5), '\n')
 
-    # Генерация пропуска в выбранном столбце
+    # Generating a gap in a selected column
     arr_parameter = np.array(data[parameter])
     mask = np.array(data[mask_name])
     arr_parameter[mask == 0] = -100.0
 
-    # Запускаем заполнение пропусков
+    # Start filling in the gaps
     without_gaps = fill_gaps(arr_parameter, max_window_size = 50, gap_value = -100.0)
 
-    # Проверка точности
+    # Vericfication
     validate(parameter=parameter, mask=mask_name, data=data, withoutgap_arr=without_gaps)
 
