@@ -12,10 +12,12 @@ from core.repository.tasks import Task, TaskTypesEnum, TsForecastingParams
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, median_absolute_error
 from pylab import rcParams
+
 rcParams['figure.figsize'] = 18, 7
 
 
-def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array, gap_value: float=-100.0) -> None:
+def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array,
+             gap_value: float = -100.0) -> None:
     """Checking the accuracy of restoring the source timeseries
 
     Parameters
@@ -53,19 +55,19 @@ def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.a
     print('Maximum value in the gap - ', max_value)
 
     # Displaying metrics
-    MAE = mean_absolute_error(true_values, predicted_values)
-    print('Mean absolute error -', round(MAE, 2))
+    mae_metric = mean_absolute_error(true_values, predicted_values)
+    print('Mean absolute error -', round(mae_metric, 2))
 
-    RMSE = (mean_squared_error(true_values, predicted_values)) ** 0.5
-    print('RMSE -', round(RMSE, 2))
+    rmse_metric = (mean_squared_error(true_values, predicted_values)) ** 0.5
+    print('RMSE -', round(rmse_metric, 2))
 
-    MedianAE = median_absolute_error(true_values, predicted_values)
-    print('Median absolute error -', round(MedianAE, 2), '\n')
+    medianae_metric = median_absolute_error(true_values, predicted_values)
+    print('Median absolute error -', round(medianae_metric, 2), '\n')
 
     # Matching predicted values with gaps
     arr_parameter_modified = np.copy(arr_parameter)
-    arr_parameter[arr_mask == 1] = gap_value # Initial values in gaps
-    withoutgap_arr[arr_mask == 1] = gap_value # Filled (predicted) values in gaps
+    arr_parameter[arr_mask == 1] = gap_value  # Initial values in gaps
+    withoutgap_arr[arr_mask == 1] = gap_value  # Filled (predicted) values in gaps
 
     arr_parameter_modified[arr_mask == 0] = gap_value
     masked_array_1 = np.ma.masked_where(arr_parameter_modified == gap_value, arr_parameter_modified)
@@ -78,23 +80,23 @@ def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.a
         name = 'Количество осадков, мм'
 
     plt.plot(data['Date'], masked_array_1, c='blue', alpha=0.5)
-    plt.plot(data['Date'], masked_array_2, c='green', alpha=0.5, label = 'Действительные значения')
-    plt.plot(data['Date'], masked_array_3, c='red', alpha=0.5, label = 'Предсказанные значения')
+    plt.plot(data['Date'], masked_array_2, c='green', alpha=0.5, label='Действительные значения')
+    plt.plot(data['Date'], masked_array_3, c='red', alpha=0.5, label='Предсказанные значения')
     plt.ylabel(name, fontsize=15)
     plt.xlabel('Дата', fontsize=15)
     if mask != 'Small_mask':
-        plt.xlim(data['Date'][ids[0]-100], data['Date'][ids[-1]+100])
+        plt.xlim(data['Date'][ids[0] - 100], data['Date'][ids[-1] + 100])
     plt.grid()
-    plt.legend(fontsize = 15)
+    plt.legend(fontsize=15)
     plt.show()
 
 
-def fill_gaps(data: np.array, max_window_size: int=100, gap_value: float=-100.0) -> np.array:
+def fill_gaps(data: np.array, max_window_size: int = 100, gap_value: float = -100.0) -> np.array:
     """Wrapper function for filling gaps in time series using FEDOT framework
 
     Parameters
     ----------
-    data : np.array
+    data : numpy array
         One-dimensional array (time series) in which we want to fill in the gaps
     max_window_size : int
         Sliding window size
@@ -119,7 +121,7 @@ def fill_gaps(data: np.array, max_window_size: int=100, gap_value: float=-100.0)
         if index == 0:
             local_gaps.append(gap_list[index])
         else:
-            prev_gap = gap_list[index-1]
+            prev_gap = gap_list[index - 1]
             if gap - prev_gap > 1:
                 # There is a gap between gaps
                 local_gaps.append(gap)
@@ -133,7 +135,6 @@ def fill_gaps(data: np.array, max_window_size: int=100, gap_value: float=-100.0)
 
     # Iterately fill in the gaps in the time series
     for gap in new_gap_list:
-
         # The entire time series is used for training until the gap
         timeseries_train_part = data[:gap[0]]
 
@@ -187,7 +188,7 @@ if __name__ == '__main__':
     parameter = 'Mean Tmp'
 
     # Loading a dataset with data
-    data = pd.read_csv('D:/FEDOT_timeseries/Spb_meteodata.csv', sep = ';')
+    data = pd.read_csv('D:/FEDOT_timeseries/Spb_meteodata.csv', sep=';')
     data['Date'] = pd.to_datetime(data['Date'])
     print(data.head(5), '\n')
 
@@ -197,8 +198,7 @@ if __name__ == '__main__':
     arr_parameter[mask == 0] = -100.0
 
     # Start filling in the gaps
-    without_gaps = fill_gaps(arr_parameter, max_window_size = 50, gap_value = -100.0)
+    without_gaps = fill_gaps(arr_parameter, max_window_size=50, gap_value=-100.0)
 
     # Vericfication
     validate(parameter=parameter, mask=mask_name, data=data, withoutgap_arr=without_gaps)
-
