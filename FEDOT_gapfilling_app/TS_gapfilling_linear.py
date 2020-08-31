@@ -14,15 +14,30 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, median_abso
 from pylab import rcParams
 rcParams['figure.figsize'] = 18, 7
 
-# Checking the accuracy of restoring the source timeseries
-### Input:
-# parameter      --- the name of the column in the dataframe, the parameter from which the time series is composed
-# mask           --- the name of the column in the data frame, which contains the binary code of the gap mask
-# data           --- dataframe containing all the necessary information
-# withoutgap_arr --- array without gaps
-### Output:
-# The function displays the values of three metrics: MAE, RMSE, MedianAE + plots
-def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array, bad_value: float=-100.0) -> None:
+
+def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array, gap_value: float=-100.0) -> None:
+    """Checking the accuracy of restoring the source timeseries
+
+    Parameters
+    ----------
+    parameter : str
+        The name of the column in the dataframe, the parameter from which the time series is composed
+    mask : str
+        The name of the column in the data frame, which contains the binary code of the gap mask
+    data : pandas DataFrame
+        Dataframe containing all the necessary information
+    withoutgap_arr : numpy array
+        Array without gaps
+    gap_value : float
+        Gap flag in array
+
+    Returns
+    -------
+    None
+        The function displays the values of three metrics: MAE, RMSE, MedianAE + plots
+
+    """
+
     arr_parameter = np.array(data[parameter])
     arr_mask = np.array(data[mask])
 
@@ -49,13 +64,13 @@ def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.a
 
     # Matching predicted values with gaps
     arr_parameter_modified = np.copy(arr_parameter)
-    arr_parameter[arr_mask == 1] = bad_value # Initial values in gaps
-    withoutgap_arr[arr_mask == 1] = bad_value # Filled (predicted) values in gaps
+    arr_parameter[arr_mask == 1] = gap_value # Initial values in gaps
+    withoutgap_arr[arr_mask == 1] = gap_value # Filled (predicted) values in gaps
 
-    arr_parameter_modified[arr_mask == 0] = bad_value
-    masked_array_1 = np.ma.masked_where(arr_parameter_modified == bad_value, arr_parameter_modified)
-    masked_array_2 = np.ma.masked_where(arr_parameter == bad_value, arr_parameter)
-    masked_array_3 = np.ma.masked_where(withoutgap_arr == bad_value, withoutgap_arr)
+    arr_parameter_modified[arr_mask == 0] = gap_value
+    masked_array_1 = np.ma.masked_where(arr_parameter_modified == gap_value, arr_parameter_modified)
+    masked_array_2 = np.ma.masked_where(arr_parameter == gap_value, arr_parameter)
+    masked_array_3 = np.ma.masked_where(withoutgap_arr == gap_value, withoutgap_arr)
 
     if parameter == 'Mean Tmp':
         name = 'Среднесуточная температура воздуха, ℃'
@@ -74,14 +89,24 @@ def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.a
     plt.show()
 
 
-# Wrapper function for filling gaps in time series using FEDOT framework
-### Input:
-# data            --- one-dimensional array (time series) in which we want to fill in the gaps
-# max_window_size --- sliding window size
-# gap_value       --- gap flag in array
-### Output:
-# timeseries --- time series without gaps
 def fill_gaps(data: np.array, max_window_size: int=100, gap_value: float=-100.0) -> np.array:
+    """Wrapper function for filling gaps in time series using FEDOT framework
+
+    Parameters
+    ----------
+    data : np.array
+        One-dimensional array (time series) in which we want to fill in the gaps
+    max_window_size : int
+        Sliding window size
+    gap_value : float
+        Gap flag in array
+
+    Returns
+    -------
+    numpy array
+        Time series without gaps
+
+    """
 
     # Gap indices
     gap_list = np.ravel(np.argwhere(data == gap_value))
