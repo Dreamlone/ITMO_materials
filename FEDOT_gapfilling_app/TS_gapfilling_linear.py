@@ -183,6 +183,8 @@ def fill_gaps(data: np.array, max_window_size: int = 100, gap_value: float = -10
 
 #                               ----- APPLICATION OF THE ALGORITHM -----                                     #
 if __name__ == '__main__':
+
+    print('Test branch')
     # For what values will the model run
     mask_name = 'Big_mask_100'
     parameter = 'Mean Tmp'
