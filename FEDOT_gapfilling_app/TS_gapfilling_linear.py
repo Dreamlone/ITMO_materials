@@ -1,21 +1,18 @@
-from copy import copy
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-from core.composer.node import PrimaryNode, SecondaryNode
+from core.composer.node import PrimaryNode
 from core.composer.ts_chain import TsForecastingChain
-from core.models.data import InputData, train_test_data_setup
+from core.models.data import InputData
 from core.repository.dataset_types import DataTypesEnum
 from core.repository.tasks import Task, TaskTypesEnum, TsForecastingParams
-
-from sklearn.metrics import mean_absolute_error, mean_squared_error, median_absolute_error
 from pylab import rcParams
+from sklearn.metrics import mean_absolute_error, mean_squared_error, median_absolute_error
 
 rcParams['figure.figsize'] = 18, 7
 
 print('Nice')
+print('ts-gapfilling')
 
 def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array,
              gap_value: float = -100.0) -> None:
