@@ -14,6 +14,7 @@ rcParams['figure.figsize'] = 18, 7
 print('Nice')
 print('ts-gapfilling')
 print('1')
+print('2')
 
 def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array,
              gap_value: float = -100.0) -> None:
