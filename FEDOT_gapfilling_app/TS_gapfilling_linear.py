@@ -13,6 +13,7 @@ rcParams['figure.figsize'] = 18, 7
 print('A')
 print('B')
 print('C')
+print('D')
 
 def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array,
              gap_value: float = -100.0) -> None:
