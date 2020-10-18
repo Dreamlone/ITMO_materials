@@ -202,3 +202,6 @@ if __name__ == '__main__':
 
     # Vericfication
     validate(parameter=parameter, mask=mask_name, data=data, withoutgap_arr=without_gaps)
+
+print('The')
+print('End')
