@@ -14,6 +14,7 @@ print('A')
 print('B')
 print('C')
 print('D')
+print('E')
 
 def validate(parameter: str, mask: str, data: pd.DataFrame, withoutgap_arr: np.array,
              gap_value: float = -100.0) -> None:
